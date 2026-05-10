@@ -10,8 +10,8 @@ TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 # ID менеджеров
 MANAGERS = [
-    1101671929
-    
+    1101671929,
+    786753371
 ]
 
 bot = Bot(
