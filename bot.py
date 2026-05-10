@@ -62,32 +62,25 @@ async def text_handler(message: Message):
             if reply_text and "ID:" in reply_text:
 
                 try:
-
                     target_id = int(
                         reply_text.split("ID:")[1]
                         .split("\n")[0]
                         .strip()
                     )
 
-                    # ОТПРАВКА ПОЛЬЗОВАТЕЛЮ
                     await bot.send_message(
                         target_id,
                         f"Сообщение от менеджера:\n\n{message.text}"
                     )
 
-                    # УВЕДОМЛЕНИЕ ДРУГИМ МЕНЕДЖЕРАМ
                     for manager in MANAGERS:
-
                         if manager != user_id:
-
                             await bot.send_message(
                                 manager,
                                 f"Менеджер ответил пользователю {target_id}:\n\n{message.text}"
                             )
 
-                    await message.answer(
-                        "Сообщение отправлено пользователю"
-                    )
+                    await message.answer("Сообщение отправлено пользователю")
 
                 except Exception as e:
                     print(e)
@@ -97,59 +90,46 @@ async def text_handler(message: Message):
     # =========================
     # ПОЛЬЗОВАТЕЛИ
     # =========================
-
     if user_id not in users_data:
         return
 
     # ФИО
     if "name" not in users_data[user_id]:
-
         users_data[user_id]["name"] = message.text
-
-        await message.answer(
-            "Пришлите фото чека"
-        )
-
+        await message.answer("Пришлите фото чека")
         return
 
-    # ТЕЛЕФОН
-if "photo" in users_data[user_id]:
+    # ТЕЛЕФОН (❗ ВАЖНО: ЭТО ДОЛЖНО БЫТЬ ВНУТРИ ФУНКЦИИ)
+    if "photo" in users_data[user_id] and "phone" not in users_data[user_id]:
 
-    users_data[user_id]["phone"] = message.text
+        users_data[user_id]["phone"] = message.text
 
-    data = users_data[user_id]
+        data = users_data[user_id]
 
-    username = message.from_user.username
+        username = message.from_user.username
+        username_text = f"@{username}" if username else "не указан"
 
-    if username:
-        username_text = f"@{username}"
-    else:
-        username_text = "не указан"
-
-    caption = (
-        f"НОВАЯ ЗАЯВКА\n\n"
-        f"ФИО: {data['name']}\n"
-        f"Телефон: {data['phone']}\n"
-        f"Username: {username_text}\n"
-        f"ID: {user_id}"
-    )
-
-    # ОТПРАВКА ВСЕМ МЕНЕДЖЕРАМ
-    for manager in MANAGERS:
-
-        await bot.send_photo(
-            chat_id=manager,
-            photo=data["photo"],
-            caption=caption
+        caption = (
+            f"НОВАЯ ЗАЯВКА\n\n"
+            f"ФИО: {data['name']}\n"
+            f"Телефон: {data['phone']}\n"
+            f"Username: {username_text}\n"
+            f"ID: {user_id}"
         )
 
-    await message.answer(
-        "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
-    )
+        for manager in MANAGERS:
+            await bot.send_photo(
+                chat_id=manager,
+                photo=data["photo"],
+                caption=caption
+            )
 
-    del users_data[user_id]
+        await message.answer(
+            "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
+        )
 
-    return
+        del users_data[user_id]
+        return
 
 
 # =========================
