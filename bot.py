@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 import asyncio
 
-TOKEN = "YOUR_TOKEN"
+TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 MANAGERS = [1101671929, 786753371]
 
