@@ -113,43 +113,43 @@ async def text_handler(message: Message):
         return
 
     # ТЕЛЕФОН
-    if "photo" in users_data[user_id] and "phone" not in users_data[user_id]:
+if "photo" in users_data[user_id]:
 
-        users_data[user_id]["phone"] = message.text
+    users_data[user_id]["phone"] = message.text
 
-        data = users_data[user_id]
+    data = users_data[user_id]
 
-        username = message.from_user.username
+    username = message.from_user.username
 
-        if username:
-            username_text = f"@{username}"
-        else:
-            username_text = "не указан"
+    if username:
+        username_text = f"@{username}"
+    else:
+        username_text = "не указан"
 
-        caption = (
-            f"НОВАЯ ЗАЯВКА\n\n"
-            f"ФИО: {data['name']}\n"
-            f"Телефон: {data['phone']}\n"
-            f"Username: {username_text}\n"
-            f"ID: {user_id}"
+    caption = (
+        f"НОВАЯ ЗАЯВКА\n\n"
+        f"ФИО: {data['name']}\n"
+        f"Телефон: {data['phone']}\n"
+        f"Username: {username_text}\n"
+        f"ID: {user_id}"
+    )
+
+    # ОТПРАВКА ВСЕМ МЕНЕДЖЕРАМ
+    for manager in MANAGERS:
+
+        await bot.send_photo(
+            chat_id=manager,
+            photo=data["photo"],
+            caption=caption
         )
 
-        # ОТПРАВКА ВСЕМ МЕНЕДЖЕРАМ
-        for manager in MANAGERS:
+    await message.answer(
+        "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
+    )
 
-            await bot.send_photo(
-                chat_id=manager,
-                photo=data["photo"],
-                caption=caption
-            )
+    del users_data[user_id]
 
-        await message.answer(
-            "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
-        )
-
-        del users_data[user_id]
-
-        return
+    return
 
 
 # =========================
