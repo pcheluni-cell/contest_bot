@@ -61,26 +61,45 @@ async def text_handler(message: Message):
     # =========================
     if user_id in MANAGERS:
 
-        if message.reply_to_message:
+    if message.reply_to_message:
 
-            reply_id = message.reply_to_message.message_id
+        reply_id = message.reply_to_message.message_id
 
-            if reply_id in message_map:
+        if reply_id in message_map:
 
-                target_user_id = message_map[reply_id]
+            target_user_id = message_map[reply_id]
+
+            # 1. отправляем пользователю
+            try:
+                await bot.send_message(
+                    target_user_id,
+                    f"Сообщение от менеджера:\n\n{message.text}"
+                )
+            except Exception as e:
+                await message.answer(f"Ошибка отправки пользователю: {e}")
+
+            # 2. уведомляем ВСЕХ менеджеров
+            for manager in MANAGERS:
+
+                # чтобы не слать самому себе
+                if manager == user_id:
+                    continue
 
                 try:
                     await bot.send_message(
-                        target_user_id,
-                        f"Сообщение от менеджера:\n\n{text}"
+                        manager,
+                        (
+                            f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
+                            f"От: {message.from_user.full_name}\n"
+                            f"Сообщение: {message.text}"
+                        )
                     )
-
-                    await message.answer("Отправлено пользователю")
-
                 except Exception as e:
-                    await message.answer(f"Ошибка отправки: {e}")
+                    print("MANAGER BROADCAST ERROR:", e)
 
-        return
+            await message.answer("Отправлено пользователю и уведомлены менеджеры")
+
+    return
 
     # =========================
     # ПОЛЬЗОВАТЕЛИ
