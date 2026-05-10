@@ -9,12 +9,8 @@ import asyncio
 TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 # ID МЕНЕДЖЕРОВ
-MANAGERS = [
-    1101671929,
-    786753371
-]
+MANAGERS = [1101671929, 786753371]
 
-# СОЗДАНИЕ БОТА
 bot = Bot(
     token=TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
@@ -22,30 +18,31 @@ bot = Bot(
 
 dp = Dispatcher()
 
-# ВРЕМЕННОЕ ХРАНЕНИЕ ДАННЫХ
+# ХРАНЕНИЕ ДАННЫХ
 users_data = {}
 
 
 # =========================
-# СТАРТ
+# START
 # =========================
 @dp.message(CommandStart())
 async def start(message: Message):
+    user_id = message.from_user.id
+    users_data[user_id] = {
+        "step": "name"
+    }
 
-    users_data[message.from_user.id] = {}
-
-    await message.answer(
-        "Введите ФИО"
-    )
+    await message.answer("Введите ФИО")
 
 
 # =========================
-# ОБРАБОТКА ТЕКСТА
+# ТЕКСТ
 # =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
 
     user_id = message.from_user.id
+    text = message.text
 
     # =========================
     # МЕНЕДЖЕРЫ
@@ -54,36 +51,31 @@ async def text_handler(message: Message):
 
         if message.reply_to_message:
 
-            reply_text = (
-                message.reply_to_message.text
-                or message.reply_to_message.caption
-            )
+            reply_text = message.reply_to_message.text or message.reply_to_message.caption
 
             if reply_text and "ID:" in reply_text:
 
                 try:
                     target_id = int(
-                        reply_text.split("ID:")[1]
-                        .split("\n")[0]
-                        .strip()
+                        reply_text.split("ID:")[1].split("\n")[0].strip()
                     )
 
                     await bot.send_message(
                         target_id,
-                        f"Сообщение от менеджера:\n\n{message.text}"
+                        f"Сообщение от менеджера:\n\n{text}"
                     )
 
                     for manager in MANAGERS:
                         if manager != user_id:
                             await bot.send_message(
                                 manager,
-                                f"Менеджер ответил пользователю {target_id}:\n\n{message.text}"
+                                f"Ответ менеджера пользователю {target_id}:\n\n{text}"
                             )
 
                     await message.answer("Сообщение отправлено пользователю")
 
                 except Exception as e:
-                    print(e)
+                    print("Ошибка:", e)
 
         return
 
@@ -91,28 +83,30 @@ async def text_handler(message: Message):
     # ПОЛЬЗОВАТЕЛИ
     # =========================
     if user_id not in users_data:
+        await message.answer("Нажмите /start")
         return
 
-    # ФИО
-    if "name" not in users_data[user_id]:
-        users_data[user_id]["name"] = message.text
+    user = users_data[user_id]
+
+    # ---- ФИО ----
+    if user["step"] == "name":
+        user["name"] = text
+        user["step"] = "photo"
+
         await message.answer("Пришлите фото чека")
         return
 
-    # ТЕЛЕФОН (❗ ВАЖНО: ЭТО ДОЛЖНО БЫТЬ ВНУТРИ ФУНКЦИИ)
-    if "photo" in users_data[user_id] and "phone" not in users_data[user_id]:
-
-        users_data[user_id]["phone"] = message.text
-
-        data = users_data[user_id]
+    # ---- ТЕЛЕФОН ----
+    if user["step"] == "phone":
+        user["phone"] = text
 
         username = message.from_user.username
         username_text = f"@{username}" if username else "не указан"
 
         caption = (
             f"НОВАЯ ЗАЯВКА\n\n"
-            f"ФИО: {data['name']}\n"
-            f"Телефон: {data['phone']}\n"
+            f"ФИО: {user['name']}\n"
+            f"Телефон: {user['phone']}\n"
             f"Username: {username_text}\n"
             f"ID: {user_id}"
         )
@@ -120,20 +114,18 @@ async def text_handler(message: Message):
         for manager in MANAGERS:
             await bot.send_photo(
                 chat_id=manager,
-                photo=data["photo"],
+                photo=user["photo"],
                 caption=caption
             )
 
-        await message.answer(
-            "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
-        )
+        await message.answer("Ожидайте, менеджер свяжется с вами.")
 
         del users_data[user_id]
         return
 
 
 # =========================
-# ОБРАБОТКА ФОТО
+# ФОТО
 # =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
@@ -141,37 +133,26 @@ async def photo_handler(message: Message):
     user_id = message.from_user.id
 
     if user_id not in users_data:
-
-        await message.answer(
-            "Нажмите /start"
-        )
-
+        await message.answer("Нажмите /start")
         return
 
-    # ЕСЛИ НЕ ВВЕДЕНО ФИО
-    if "name" not in users_data[user_id]:
+    user = users_data[user_id]
 
-        await message.answer(
-            "Сначала введите ФИО"
-        )
-
+    if user["step"] != "photo":
+        await message.answer("Сначала введите ФИО")
         return
 
-    # СОХРАНЯЕМ ФОТО
-    users_data[user_id]["photo"] = message.photo[-1].file_id
+    user["photo"] = message.photo[-1].file_id
+    user["step"] = "phone"
 
-    await message.answer(
-        "Введите номер телефона"
-    )
+    await message.answer("Введите номер телефона")
 
 
 # =========================
 # ЗАПУСК
 # =========================
 async def main():
-
     print("BOT STARTED")
-
     await dp.start_polling(bot)
 
 
