@@ -5,10 +5,19 @@ from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 import asyncio
 
+# =========================
+# ТОКЕН
+# =========================
 TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
+# =========================
+# МЕНЕДЖЕРЫ
+# =========================
 MANAGERS = [1101671929, 786753371]
 
+# =========================
+# BOT / DP
+# =========================
 bot = Bot(
     token=TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
@@ -16,7 +25,15 @@ bot = Bot(
 
 dp = Dispatcher()
 
+# =========================
+# ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ
+# =========================
 users_data = {}
+
+# =========================
+# СВЯЗЬ СООБЩЕНИЙ (менеджер → пользователь)
+# =========================
+message_map = {}
 
 
 # =========================
@@ -31,7 +48,7 @@ async def start(message: Message):
 
 
 # =========================
-# TEXT
+# TEXT HANDLER
 # =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
@@ -39,25 +56,35 @@ async def text_handler(message: Message):
     user_id = message.from_user.id
     text = message.text
 
+    # =========================
+    # МЕНЕДЖЕРЫ
+    # =========================
     if user_id in MANAGERS:
 
-    if message.reply_to_message:
+        if message.reply_to_message:
 
-        reply_id = message.reply_to_message.message_id
+            reply_id = message.reply_to_message.message_id
 
-        if reply_id in message_map:
+            if reply_id in message_map:
 
-            target_id = message_map[reply_id]
+                target_user_id = message_map[reply_id]
 
-            await bot.send_message(
-                target_id,
-                f"Сообщение от менеджера:\n\n{message.text}"
-            )
+                try:
+                    await bot.send_message(
+                        target_user_id,
+                        f"Сообщение от менеджера:\n\n{text}"
+                    )
 
-            await message.answer("Отправлено пользователю")
+                    await message.answer("Отправлено пользователю")
 
-    return
+                except Exception as e:
+                    await message.answer(f"Ошибка отправки: {e}")
 
+        return
+
+    # =========================
+    # ПОЛЬЗОВАТЕЛИ
+    # =========================
     if user_id not in users_data:
         users_data[user_id] = {}
 
@@ -69,7 +96,7 @@ async def text_handler(message: Message):
         await message.answer("Отправьте фото чека")
         return
 
-    # ТЕЛЕФОН (финальный шаг)
+    # ТЕЛЕФОН
     if "photo" in user:
 
         user["phone"] = text
@@ -85,30 +112,33 @@ async def text_handler(message: Message):
             f"ID: {user_id}"
         )
 
+        # =========================
         # ОТПРАВКА МЕНЕДЖЕРАМ
+        # =========================
         for manager in MANAGERS:
-    try:
-        await bot.send_photo(
-            chat_id=manager,
-            photo=user["photo"],
-            caption=caption
-        )
 
-message_map[msg.message_id] = user_id
-    except Exception as e:
-        print("SEND ERROR MANAGER:", manager, e)
+            try:
+                msg = await bot.send_photo(
+                    chat_id=manager,
+                    photo=user["photo"],
+                    caption=caption
+                )
 
-await message.answer("Ожидайте, менеджер проверяет номер заказа")
+                # сохраняем связь сообщения
+                message_map[msg.message_id] = user_id
 
-        # очистка
-        users_data.pop(user_id, None)
+            except Exception as e:
+                print("ERROR:", e)
+
+        await message.answer("Ожидайте, менеджер проверяет номер заказа")
+
+        del users_data[user_id]
+
         return
-
-    await message.answer("Сначала отправьте фото")
 
 
 # =========================
-# PHOTO
+# PHOTO HANDLER
 # =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
