@@ -5,10 +5,8 @@ from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 import asyncio
 
-# ТОКЕН БОТА
 TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
-# ID МЕНЕДЖЕРОВ
 MANAGERS = [1101671929, 786753371]
 
 bot = Bot(
@@ -18,7 +16,6 @@ bot = Bot(
 
 dp = Dispatcher()
 
-# ХРАНЕНИЕ ДАННЫХ
 users_data = {}
 
 
@@ -28,15 +25,13 @@ users_data = {}
 @dp.message(CommandStart())
 async def start(message: Message):
     user_id = message.from_user.id
-    users_data[user_id] = {
-        "step": "name"
-    }
+    users_data[user_id] = {}
 
     await message.answer("Введите ФИО")
 
 
 # =========================
-# ТЕКСТ
+# TEXT (ФИО + телефон)
 # =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
@@ -44,67 +39,52 @@ async def text_handler(message: Message):
     user_id = message.from_user.id
     text = message.text
 
-    print(f"[TEXT] user={user_id} text={text}")
-
+    # менеджеры не обрабатываются как заявки
     if user_id in MANAGERS:
-        print("[INFO] manager detected")
         return
 
     if user_id not in users_data:
-        print("[WARN] user not in users_data")
-        await message.answer("Нажмите /start")
-        return
+        users_data[user_id] = {}
 
     user = users_data[user_id]
 
-    print(f"[STATE] step={user.get('step')} data={user}")
-
-    # ФИО
-    if user["step"] == "name":
+    # если ещё нет ФИО → считаем что это ФИО
+    if "name" not in user:
         user["name"] = text
-        user["step"] = "photo"
-        print("[STEP] name -> photo")
-
-        await message.answer("Пришлите фото чека")
+        await message.answer("Теперь отправьте фото чека")
         return
 
-    # ТЕЛЕФОН
-    if user["step"] == "phone":
-        print("[STEP] phone handler triggered")
+    # если есть фото → это телефон и сразу отправляем
+    if "photo" in user:
 
         user["phone"] = text
 
-        try:
-            username = message.from_user.username
-            username_text = f"@{username}" if username else "не указан"
+        username = message.from_user.username
+        username_text = f"@{username}" if username else "не указан"
 
-            caption = (
-                f"НОВАЯ ЗАЯВКА\n\n"
-                f"ФИО: {user['name']}\n"
-                f"Телефон: {user['phone']}\n"
-                f"Username: {username_text}\n"
-                f"ID: {user_id}"
+        caption = (
+            f"НОВАЯ ЗАЯВКА\n\n"
+            f"ФИО: {user.get('name')}\n"
+            f"Телефон: {user.get('phone')}\n"
+            f"Username: {username_text}\n"
+            f"ID: {user_id}"
+        )
+
+        for manager in MANAGERS:
+            await bot.send_photo(
+                chat_id=manager,
+                photo=user["photo"],
+                caption=caption
             )
 
-            for manager in MANAGERS:
-                await bot.send_photo(
-                    chat_id=manager,
-                    photo=user["photo"],
-                    caption=caption
-                )
+        await message.answer("Заявка отправлена менеджеру")
 
-            await message.answer("Заявка отправлена менеджеру")
-
-            del users_data[user_id]
-
-        except Exception as e:
-            print("[ERROR PHONE BLOCK]", e)
-
+        users_data.pop(user_id, None)
         return
 
 
 # =========================
-# ФОТО
+# PHOTO
 # =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
@@ -112,23 +92,15 @@ async def photo_handler(message: Message):
     user_id = message.from_user.id
 
     if user_id not in users_data:
-        await message.answer("Нажмите /start")
-        return
+        users_data[user_id] = {}
 
-    user = users_data[user_id]
-
-    if user["step"] != "photo":
-        await message.answer("Сначала введите ФИО")
-        return
-
-    user["photo"] = message.photo[-1].file_id
-    user["step"] = "phone"
+    users_data[user_id]["photo"] = message.photo[-1].file_id
 
     await message.answer("Введите номер телефона")
 
 
 # =========================
-# ЗАПУСК
+# START BOT
 # =========================
 async def main():
     print("BOT STARTED")
