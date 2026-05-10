@@ -5,7 +5,7 @@ from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 import asyncio
 
-TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
+TOKEN = "YOUR_TOKEN"
 
 MANAGERS = [1101671929, 786753371]
 
@@ -24,14 +24,14 @@ users_data = {}
 # =========================
 @dp.message(CommandStart())
 async def start(message: Message):
-    user_id = message.from_user.id
-    users_data[user_id] = {}
+
+    users_data[message.from_user.id] = {}
 
     await message.answer("Введите ФИО")
 
 
 # =========================
-# TEXT (ФИО + телефон)
+# TEXT
 # =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
@@ -39,7 +39,6 @@ async def text_handler(message: Message):
     user_id = message.from_user.id
     text = message.text
 
-    # менеджеры не обрабатываются как заявки
     if user_id in MANAGERS:
         return
 
@@ -48,13 +47,13 @@ async def text_handler(message: Message):
 
     user = users_data[user_id]
 
-    # если ещё нет ФИО → считаем что это ФИО
+    # ФИО
     if "name" not in user:
         user["name"] = text
-        await message.answer("Теперь отправьте фото чека")
+        await message.answer("Отправьте фото чека")
         return
 
-    # если есть фото → это телефон и сразу отправляем
+    # ТЕЛЕФОН (финальный шаг)
     if "photo" in user:
 
         user["phone"] = text
@@ -64,12 +63,13 @@ async def text_handler(message: Message):
 
         caption = (
             f"НОВАЯ ЗАЯВКА\n\n"
-            f"ФИО: {user.get('name')}\n"
-            f"Телефон: {user.get('phone')}\n"
+            f"ФИО: {user['name']}\n"
+            f"Телефон: {user['phone']}\n"
             f"Username: {username_text}\n"
             f"ID: {user_id}"
         )
 
+        # ОТПРАВКА МЕНЕДЖЕРАМ
         for manager in MANAGERS:
             await bot.send_photo(
                 chat_id=manager,
@@ -77,10 +77,14 @@ async def text_handler(message: Message):
                 caption=caption
             )
 
-        await message.answer("Заявка отправлена менеджеру")
+        # ОТВЕТ ПОЛЬЗОВАТЕЛЮ (ВАЖНОЕ ИСПРАВЛЕНИЕ)
+        await message.answer("Ожидайте, менеджер проверяет номер заказа")
 
+        # очистка
         users_data.pop(user_id, None)
         return
+
+    await message.answer("Сначала отправьте фото")
 
 
 # =========================
