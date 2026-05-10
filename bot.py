@@ -83,37 +83,21 @@ async def text_handler(message: Message):
         return
 
     # ФИО
-    if "name" not in users_data[user_id]:
+if "name" not in users_data[user_id]:
 
-        users_data[user_id]["name"] = message.text
+    users_data[user_id]["name"] = message.text
 
-        await message.answer(
-            "Введите номер телефона"
-        )
+    await message.answer(
+        "Пришлите фото чека"
+    )
 
-        return
-
-    # ТЕЛЕФОН
-    if "phone" not in users_data[user_id]:
-
-        users_data[user_id]["phone"] = message.text
-
-        await message.answer(
-            "Пришлите фото чека"
-        )
-
-        return
+    return
 
 
-# ФОТО ЧЕКА
-@dp.message(F.photo)
-async def photo_handler(message: Message):
+# ТЕЛЕФОН
+if "phone" not in users_data[user_id]:
 
-    user_id = message.from_user.id
-
-    if user_id not in users_data:
-        await message.answer("Нажмите /start")
-        return
+    users_data[user_id]["phone"] = message.text
 
     data = users_data[user_id]
 
@@ -132,8 +116,45 @@ async def photo_handler(message: Message):
         f"ID: {user_id}"
     )
 
-    # Отправка всем менеджерам
-for manager in MANAGERS:
+    for manager in MANAGERS:
+
+        await bot.send_photo(
+            chat_id=manager,
+            photo=data["photo"],
+            caption=caption
+        )
+
+    await message.answer(
+        "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
+    )
+
+    del users_data[user_id]
+
+    return
+        
+
+
+# ФОТО ЧЕКА
+@dp.message(F.photo)
+async def photo_handler(message: Message):
+
+    user_id = message.from_user.id
+
+    if user_id not in users_data:
+        await message.answer("Нажмите /start")
+        return
+
+    # СОХРАНЯЕМ ФОТО
+    users_data[user_id]["photo"] = message.photo[-1].file_id
+
+    await message.answer(
+        "Введите номер телефона"
+    )
+
+    
+
+        # Отправка всем менеджерам
+    for manager in MANAGERS:
 
         await bot.send_photo(
             chat_id=manager,
@@ -146,8 +167,6 @@ for manager in MANAGERS:
     )
 
     del users_data[user_id]
-
-
 # ЗАПУСК
 async def main():
 
