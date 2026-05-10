@@ -59,41 +59,37 @@ async def text_handler(message: Message):
     # =========================
     if user_id in MANAGERS:
 
-        if message.reply_to_message:
+    	if message.reply_to_message:
 
-            reply_id = message.reply_to_message.message_id
+        	reply_id = message.reply_to_message.message_id
 
-            if reply_id in message_map:
+        	if reply_id in message_map:
 
-                target_user_id = message_map[reply_id]
+            		target_user_id = message_map[reply_id]
 
-                try:
-                    # 1. отправляем пользователю
-                    await bot.send_message(
-                        target_user_id,
-                        f"Сообщение от менеджера:\n\n{text}"
-                    )
+            		try:
+                		await bot.send_message(
+                    			target_user_id,
+                    			f"Сообщение от менеджера:\n\n{message.text}"
+                		)
 
-                    # 2. уведомляем всех менеджеров
-                    for manager in MANAGERS:
+                		for manager in MANAGERS:
 
-                        if manager != user_id:
+                    			if manager != user_id:
 
-                            await bot.send_message(
-                                manager,
-                                (
-                                    f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
-                                    f"От: {message.from_user.full_name}\n"
-                                    f"Сообщение: {text}"
-                                )
-                            )
+                        			await bot.send_message(
+                            				manager,
+                            				f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
+                            				f"От: {message.from_user.full_name}\n"
+                            				f"{message.text}"
+                        			)
 
-                    await message.answer("Отправлено пользователю и менеджерам")
+                		await message.answer("Отправлено пользователю")
 
-                except Exception as e:
-                    await message.answer(f"Ошибка: {e}")
+            		except Exception as e:
+                		await message.answer(f"Ошибка: {e}")
 
-        return
+    	return
 
     # =========================
     # ПОЛЬЗОВАТЕЛИ
