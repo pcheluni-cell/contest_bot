@@ -5,22 +5,26 @@ from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 import asyncio
 
-TOKEN = "8654850512:AAE8OVmpzhOXlU02DOxFxdi9C2BwGb5PPu4"
+# TOKEN БОТА
+TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
-# ID менеджера
-MANAGER_ID = 1101671929
+# ID менеджеров
+MANAGERS = [
+    1101671929
+    
+]
 
 bot = Bot(
     token=TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
-
 dp = Dispatcher()
 
+# Временное хранение данных
 users_data = {}
 
 
-# Команда START
+# СТАРТ
 @dp.message(CommandStart())
 async def start(message: Message):
 
@@ -31,11 +35,49 @@ async def start(message: Message):
     )
 
 
-# Получение текста
+# ТЕКСТ ОТ ПОЛЬЗОВАТЕЛЯ
 @dp.message(F.text)
-async def get_text(message: Message):
+async def text_handler(message: Message):
 
     user_id = message.from_user.id
+
+    # ЕСЛИ ПИШЕТ МЕНЕДЖЕР
+    if user_id in MANAGERS:
+
+        # Ответ пользователю
+        if message.reply_to_message:
+
+            reply_text = message.reply_to_message.text or message.reply_to_message.caption
+
+            if reply_text and "ID:" in reply_text:
+
+                try:
+                    target_id = int(reply_text.split("ID:")[1].split("\n")[0])
+
+                    # Отправка пользователю
+                    await bot.send_message(
+                        target_id,
+                        f"Сообщение от менеджера:\n\n{message.text}"
+                    )
+
+                    # Рассылка другим менеджерам
+                    for manager in MANAGERS:
+
+                        if manager != user_id:
+
+                            await bot.send_message(
+                                manager,
+                                f"Менеджер ответил пользователю {target_id}:\n\n{message.text}"
+                            )
+
+                    await message.answer("Ответ отправлен пользователю")
+
+                except Exception as e:
+                    print(e)
+
+        return
+
+    # ЕСЛИ ПИШЕТ ПОЛЬЗОВАТЕЛЬ
 
     if user_id not in users_data:
         return
@@ -51,7 +93,7 @@ async def get_text(message: Message):
 
         return
 
-    # Телефон
+    # ТЕЛЕФОН
     if "phone" not in users_data[user_id]:
 
         users_data[user_id]["phone"] = message.text
@@ -63,9 +105,9 @@ async def get_text(message: Message):
         return
 
 
-# Получение фото
+# ФОТО ЧЕКА
 @dp.message(F.photo)
-async def get_photo(message: Message):
+async def photo_handler(message: Message):
 
     user_id = message.from_user.id
 
@@ -75,55 +117,41 @@ async def get_photo(message: Message):
 
     data = users_data[user_id]
 
-    if "name" not in data or "phone" not in data:
-        await message.answer("Сначала заполните данные")
-        return
-
     username = message.from_user.username
 
     if username:
         username_text = f"@{username}"
     else:
-        username_text = "Не указан"
+        username_text = "не указан"
 
     caption = (
-        f"Новая заявка\n\n"
+        f"НОВАЯ ЗАЯВКА\n\n"
         f"ФИО: {data['name']}\n"
         f"Телефон: {data['phone']}\n"
         f"Username: {username_text}\n"
-        f"ID пользователя: {user_id}"
+        f"ID: {user_id}"
     )
 
-    try:
+    # Отправка всем менеджерам
+for manager in MANAGERS:
 
-        # Отправка фото менеджеру
         await bot.send_photo(
-            chat_id=MANAGER_ID,
+            chat_id=manager,
             photo=message.photo[-1].file_id,
             caption=caption
         )
 
-        # Сообщение пользователю
-        await message.answer(
-            "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
-        )
+    await message.answer(
+        "Ожидайте, менеджер проверяет ваш заказ и ответит вам."
+    )
 
-        # Очистка данных
-        del users_data[user_id]
-
-    except Exception as e:
-
-        print(e)
-
-        await message.answer(
-            "Ошибка отправки заявки."
-        )
+    del users_data[user_id]
 
 
-# Запуск бота
+# ЗАПУСК
 async def main():
 
-    print("Бот запущен")
+    print("BOT STARTED")
 
     await dp.start_polling(bot)
 
