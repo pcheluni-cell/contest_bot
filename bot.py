@@ -16,7 +16,7 @@ TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 MANAGERS = [1101671929, 786753371]
 
 # =========================
-# BOT / DP
+# BOT
 # =========================
 bot = Bot(
     token=TOKEN,
@@ -26,13 +26,11 @@ bot = Bot(
 dp = Dispatcher()
 
 # =========================
-# ДАННЫЕ ПОЛЬЗОВАТЕЛЕЙ
+# ДАННЫЕ
 # =========================
 users_data = {}
 
-# =========================
-# СВЯЗЬ СООБЩЕНИЙ (менеджер → пользователь)
-# =========================
+# message_id менеджера → user_id
 message_map = {}
 
 
@@ -61,38 +59,42 @@ async def text_handler(message: Message):
     # =========================
     if user_id in MANAGERS:
 
-    if message.reply_to_message:
+        if message.reply_to_message:
 
-        reply_id = message.reply_to_message.message_id
+            reply_id = message.reply_to_message.message_id
 
-        if reply_id in message_map:
+            if reply_id in message_map:
 
-            target_user_id = message_map[reply_id]
+                target_user_id = message_map[reply_id]
 
-            try:
-                await bot.send_message(
-                    target_user_id,
-                    f"Сообщение от менеджера:\n\n{message.text}"
-                )
+                try:
+                    # 1. отправляем пользователю
+                    await bot.send_message(
+                        target_user_id,
+                        f"Сообщение от менеджера:\n\n{text}"
+                    )
 
-                for manager in MANAGERS:
+                    # 2. уведомляем всех менеджеров
+                    for manager in MANAGERS:
 
-                    if manager != user_id:
-                        await bot.send_message(
-                            manager,
-                            (
-                                f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
-                                f"От: {message.from_user.full_name}\n"
-                                f"Сообщение: {message.text}"
+                        if manager != user_id:
+
+                            await bot.send_message(
+                                manager,
+                                (
+                                    f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
+                                    f"От: {message.from_user.full_name}\n"
+                                    f"Сообщение: {text}"
+                                )
                             )
-                        )
 
-                await message.answer("Отправлено пользователю и менеджерам")
+                    await message.answer("Отправлено пользователю и менеджерам")
 
-            except Exception as e:
-                await message.answer(f"Ошибка: {e}")
+                except Exception as e:
+                    await message.answer(f"Ошибка: {e}")
 
-    return
+        return
+
     # =========================
     # ПОЛЬЗОВАТЕЛИ
     # =========================
@@ -103,11 +105,14 @@ async def text_handler(message: Message):
 
     # ФИО
     if "name" not in user:
+
         user["name"] = text
+
         await message.answer("Отправьте фото чека")
+
         return
 
-    # ТЕЛЕФОН
+    # ТЕЛЕФОН (финальный шаг)
     if "photo" in user:
 
         user["phone"] = text
@@ -123,9 +128,7 @@ async def text_handler(message: Message):
             f"ID: {user_id}"
         )
 
-        # =========================
-        # ОТПРАВКА МЕНЕДЖЕРАМ
-        # =========================
+        # отправка менеджерам
         for manager in MANAGERS:
 
             try:
@@ -135,11 +138,11 @@ async def text_handler(message: Message):
                     caption=caption
                 )
 
-                # сохраняем связь сообщения
+                # связь сообщения
                 message_map[msg.message_id] = user_id
 
             except Exception as e:
-                print("ERROR:", e)
+                print("SEND ERROR:", e)
 
         await message.answer("Ожидайте, менеджер проверяет номер заказа")
 
@@ -168,7 +171,9 @@ async def photo_handler(message: Message):
 # START BOT
 # =========================
 async def main():
+
     print("BOT STARTED")
+
     await dp.start_polling(bot)
 
 
