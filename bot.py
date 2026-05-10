@@ -10,11 +10,11 @@ TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 # ID МЕНЕДЖЕРОВ
 MANAGERS = [
-    111111111,
-    222222222,
-    333333333
+    1101671929,
+    786753371
 ]
 
+# СОЗДАНИЕ БОТА
 bot = Bot(
     token=TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
@@ -22,11 +22,13 @@ bot = Bot(
 
 dp = Dispatcher()
 
-# Временное хранение данных пользователей
+# ВРЕМЕННОЕ ХРАНЕНИЕ ДАННЫХ
 users_data = {}
 
 
+# =========================
 # СТАРТ
+# =========================
 @dp.message(CommandStart())
 async def start(message: Message):
 
@@ -37,14 +39,16 @@ async def start(message: Message):
     )
 
 
+# =========================
 # ОБРАБОТКА ТЕКСТА
+# =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
 
     user_id = message.from_user.id
 
     # =========================
-    # ОТВЕТЫ МЕНЕДЖЕРОВ
+    # МЕНЕДЖЕРЫ
     # =========================
     if user_id in MANAGERS:
 
@@ -109,7 +113,7 @@ async def text_handler(message: Message):
         return
 
     # ТЕЛЕФОН
-    if "phone" not in users_data[user_id]:
+    if "photo" in users_data[user_id] and "phone" not in users_data[user_id]:
 
         users_data[user_id]["phone"] = message.text
 
@@ -148,7 +152,9 @@ async def text_handler(message: Message):
         return
 
 
+# =========================
 # ОБРАБОТКА ФОТО
+# =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
 
@@ -162,7 +168,7 @@ async def photo_handler(message: Message):
 
         return
 
-    # ЕСЛИ ФИО ЕЩЁ НЕ ВВЕДЕНО
+    # ЕСЛИ НЕ ВВЕДЕНО ФИО
     if "name" not in users_data[user_id]:
 
         await message.answer(
@@ -179,7 +185,9 @@ async def photo_handler(message: Message):
     )
 
 
-# ЗАПУСК БОТА
+# =========================
+# ЗАПУСК
+# =========================
 async def main():
 
     print("BOT STARTED")
