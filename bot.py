@@ -40,7 +40,23 @@ async def text_handler(message: Message):
     text = message.text
 
     if user_id in MANAGERS:
-        return
+
+    if message.reply_to_message:
+
+        reply_id = message.reply_to_message.message_id
+
+        if reply_id in message_map:
+
+            target_id = message_map[reply_id]
+
+            await bot.send_message(
+                target_id,
+                f"Сообщение от менеджера:\n\n{message.text}"
+            )
+
+            await message.answer("Отправлено пользователю")
+
+    return
 
     if user_id not in users_data:
         users_data[user_id] = {}
@@ -71,14 +87,18 @@ async def text_handler(message: Message):
 
         # ОТПРАВКА МЕНЕДЖЕРАМ
         for manager in MANAGERS:
-            await bot.send_photo(
-                chat_id=manager,
-                photo=user["photo"],
-                caption=caption
-            )
+    try:
+        await bot.send_photo(
+            chat_id=manager,
+            photo=user["photo"],
+            caption=caption
+        )
 
-        # ОТВЕТ ПОЛЬЗОВАТЕЛЮ (ВАЖНОЕ ИСПРАВЛЕНИЕ)
-        await message.answer("Ожидайте, менеджер проверяет номер заказа")
+message_map[msg.message_id] = user_id
+    except Exception as e:
+        print("SEND ERROR MANAGER:", manager, e)
+
+await message.answer("Ожидайте, менеджер проверяет номер заказа")
 
         # очистка
         users_data.pop(user_id, None)
