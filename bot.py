@@ -8,7 +8,7 @@ import asyncio
 # =========================
 # TOKEN
 # =========================
-TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
+TOKEN = "8072709295:AAEowfFbPHBSgyFGLWY0KMCqv26hme0CmeE"
 
 # =========================
 # MANAGERS
