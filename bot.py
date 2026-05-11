@@ -6,14 +6,18 @@ from aiogram.client.default import DefaultBotProperties
 import asyncio
 
 # =========================
-# ТОКЕН
+# TOKEN
 # =========================
 TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 # =========================
 # МЕНЕДЖЕРЫ
 # =========================
-MANAGERS = [1101671929, 786753371,1277262647]
+MANAGERS = [
+    1101671929,
+    786753371,
+    1277262647
+]
 
 # =========================
 # BOT
@@ -26,11 +30,11 @@ bot = Bot(
 dp = Dispatcher()
 
 # =========================
-# ДАННЫЕ
+# ХРАНЕНИЕ ДАННЫХ
 # =========================
 users_data = {}
 
-# message_id менеджера → user_id
+# message_id менеджера -> user_id
 message_map = {}
 
 
@@ -42,7 +46,9 @@ async def start(message: Message):
 
     users_data[message.from_user.id] = {}
 
-    await message.answer("Введите ФИО")
+    await message.answer(
+        "Введите ФИО"
+    )
 
 
 # =========================
@@ -59,62 +65,81 @@ async def text_handler(message: Message):
     # =========================
     if user_id in MANAGERS:
 
-    	if message.reply_to_message:
+        if message.reply_to_message:
 
-        	reply_id = message.reply_to_message.message_id
+            reply_id = message.reply_to_message.message_id
 
-        	if reply_id in message_map:
+            if reply_id in message_map:
 
-            		target_user_id = message_map[reply_id]
+                target_user_id = message_map[reply_id]
 
-            		try:
-                		await bot.send_message(
-                    			target_user_id,
-                    			f"Сообщение от менеджера:\n\n{message.text}"
-                		)
+                try:
 
-                		for manager in MANAGERS:
+                    # отправка пользователю
+                    await bot.send_message(
+                        target_user_id,
+                        f"Сообщение от менеджера:\n\n{text}"
+                    )
 
-                    			if manager != user_id:
+                    # уведомление другим менеджерам
+                    for manager in MANAGERS:
 
-                        			await bot.send_message(
-                            				manager,
-                            				f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
-                            				f"От: {message.from_user.full_name}\n"
-                            				f"{message.text}"
-                        			)
+                        if manager != user_id:
 
-                		await message.answer("Отправлено пользователю")
+                            await bot.send_message(
+                                manager,
+                                f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
+                                f"От: {message.from_user.full_name}\n\n"
+                                f"{text}"
+                            )
 
-            		except Exception as e:
-                		await message.answer(f"Ошибка: {e}")
+                    await message.answer(
+                        "Сообщение отправлено пользователю"
+                    )
 
-    	return
+                except Exception as e:
+
+                    await message.answer(
+                        f"Ошибка: {e}"
+                    )
+
+        return
 
     # =========================
     # ПОЛЬЗОВАТЕЛИ
     # =========================
     if user_id not in users_data:
+
         users_data[user_id] = {}
 
     user = users_data[user_id]
 
+    # =========================
     # ФИО
+    # =========================
     if "name" not in user:
 
         user["name"] = text
 
-        await message.answer("Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки.")
+        await message.answer(
+            "Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки."
+        )
 
         return
 
-    # ТЕЛЕФОН (финальный шаг)
-    if "photo" in user:
+    # =========================
+    # ТЕЛЕФОН
+    # =========================
+    if "photo" in user and "phone" not in user:
 
         user["phone"] = text
 
         username = message.from_user.username
-        username_text = f"@{username}" if username else "не указан"
+
+        if username:
+            username_text = f"@{username}"
+        else:
+            username_text = "не указан"
 
         caption = (
             f"НОВАЯ ЗАЯВКА\n\n"
@@ -128,23 +153,24 @@ async def text_handler(message: Message):
         for manager in MANAGERS:
 
             try:
+
                 msg = await bot.send_photo(
                     chat_id=manager,
                     photo=user["photo"],
                     caption=caption
                 )
 
-                # связь сообщения
+                # сохраняем связь message_id -> user_id
                 message_map[msg.message_id] = user_id
 
             except Exception as e:
+
                 print("SEND ERROR:", e)
 
-            await message.answer(
+        await message.answer(
             "✅ Спасибо! Мы получили ваши данные и отправили их на проверку.\n\n"
             "Проверка происходит менеджером в порядке очереди "
-            "в рабочее время с 11:00 до 20:00, "
-            "поэтому ответ может занять некоторое время.\n\n"
+            "в рабочее время с 11:00 до 20:00.\n\n"
             "После подтверждения мы отправим ваш номер участника 🎟️"
         )
 
@@ -162,15 +188,18 @@ async def photo_handler(message: Message):
     user_id = message.from_user.id
 
     if user_id not in users_data:
+
         users_data[user_id] = {}
 
     users_data[user_id]["photo"] = message.photo[-1].file_id
 
-    await message.answer("Спасибо! \n Теперь отправьте, пожалуйста, номер телефона для связи.")
+    await message.answer(
+        "Спасибо! Теперь отправьте номер телефона для связи."
+    )
 
 
 # =========================
-# START BOT
+# MAIN
 # =========================
 async def main():
 
