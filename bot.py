@@ -104,7 +104,7 @@ async def text_handler(message: Message):
 
         user["name"] = text
 
-        await message.answer("Спасибо! \n Осталось отправить фото или скриншот чека / подтверждения покупки.")
+        await message.answer("Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки.")
 
         return
 
