@@ -11,7 +11,7 @@ import asyncio
 TOKEN = "8072709295:AAGhzMAhfZFbkYqlFT3cYC4IEJhW1eku9Xs"
 
 # =========================
-# МЕНЕДЖЕРЫ
+# MANAGERS
 # =========================
 MANAGERS = [
     1101671929,
@@ -30,7 +30,7 @@ bot = Bot(
 dp = Dispatcher()
 
 # =========================
-# ХРАНЕНИЕ ДАННЫХ
+# DATA
 # =========================
 users_data = {}
 
@@ -44,7 +44,9 @@ message_map = {}
 @dp.message(CommandStart())
 async def start(message: Message):
 
-    users_data[message.from_user.id] = {}
+    users_data[message.from_user.id] = {
+        "step": "name"
+    }
 
     await message.answer(
         "Введите ФИО"
@@ -52,7 +54,7 @@ async def start(message: Message):
 
 
 # =========================
-# TEXT HANDLER
+# TEXT
 # =========================
 @dp.message(F.text)
 async def text_handler(message: Message):
@@ -61,7 +63,7 @@ async def text_handler(message: Message):
     text = message.text
 
     # =========================
-    # МЕНЕДЖЕРЫ
+    # MANAGERS
     # =========================
     if user_id in MANAGERS:
 
@@ -75,18 +77,20 @@ async def text_handler(message: Message):
 
                 try:
 
+                    # сообщение пользователю
                     await bot.send_message(
                         target_user_id,
                         f"Сообщение от менеджера:\n\n{text}"
                     )
 
+                    # другим менеджерам
                     for manager in MANAGERS:
 
                         if manager != user_id:
 
                             await bot.send_message(
                                 manager,
-                                f"📩 Ответ менеджера пользователю {target_user_id}\n\n"
+                                f"📩 Менеджер ответил пользователю {target_user_id}\n\n"
                                 f"От: {message.from_user.full_name}\n\n"
                                 f"{text}"
                             )
@@ -104,7 +108,7 @@ async def text_handler(message: Message):
         return
 
     # =========================
-    # ПОЛЬЗОВАТЕЛИ
+    # USERS
     # =========================
     if user_id not in users_data:
 
@@ -115,9 +119,9 @@ async def text_handler(message: Message):
     user = users_data[user_id]
 
     # =========================
-    # ФИО
+    # STEP NAME
     # =========================
-    if user.get("step") == "name":
+    if user["step"] == "name":
 
         user["name"] = text
         user["step"] = "photo"
@@ -129,9 +133,9 @@ async def text_handler(message: Message):
         return
 
     # =========================
-    # ТЕЛЕФОН
+    # STEP PHONE
     # =========================
-    if user.get("step") == "phone":
+    if user["step"] == "phone":
 
         user["phone"] = text
 
@@ -150,6 +154,7 @@ async def text_handler(message: Message):
             f"ID: {user_id}"
         )
 
+        # отправка менеджерам
         for manager in MANAGERS:
 
             try:
@@ -177,7 +182,7 @@ async def text_handler(message: Message):
 
 
 # =========================
-# PHOTO HANDLER
+# PHOTO
 # =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
@@ -194,8 +199,8 @@ async def photo_handler(message: Message):
 
     user = users_data[user_id]
 
-    # фото ждём только после ФИО
-    if user.get("step") != "photo":
+    # ждём фото только после ФИО
+    if user["step"] != "photo":
 
         await message.answer(
             "Сначала введите ФИО"
@@ -207,7 +212,7 @@ async def photo_handler(message: Message):
     user["step"] = "phone"
 
     await message.answer(
-        "Теперь отправьте номер телефона для связи."
+        "Теперь отправьте номер телефона."
     )
 
 
