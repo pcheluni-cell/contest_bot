@@ -50,7 +50,7 @@ async def start(message: Message, state: FSMContext):
 
     welcome_text = (
         "<b>Добро пожаловать в розыгрыш от RIDE ACTION!</b>\n\n"
-        "Главный приз — <u>сборка кастома в нашем магазине на сумму 50.000₽ 🛴</u>\n\n"
+        "Главный приз — <u>сборка кастома в нашем магазине на сумму 50.000₽</u> 🛴\n\n"
         "Чтобы принять участие, <b>нужно подтвердить покупку и сообщить данные для связи</b>, "
         "которые понадобятся в случае выигрыша.\n\n"
         "После проверки данных вы получите свой номер участника. "
@@ -71,7 +71,7 @@ async def get_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(Form.photo)
 
-    await message.answer("Теперь отправьте фото или скриншот чека.")
+    await message.answer("Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки.")
 
 
 # =========================
@@ -83,7 +83,7 @@ async def get_photo(message: Message, state: FSMContext):
     await state.update_data(photo=message.photo[-1].file_id)
     await state.set_state(Form.phone)
 
-    await message.answer("Теперь отправьте номер телефона.")
+    await message.answer("Спасибо! Теперь отправьте, пожалуйста, номер телефона для связи.")
 
 
 # =========================
