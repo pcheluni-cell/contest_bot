@@ -140,7 +140,7 @@ async def text_handler(message: Message):
             except Exception as e:
                 print("SEND ERROR:", e)
 
-                await message.answer(
+            await message.answer(
             "✅ Спасибо! Мы получили ваши данные и отправили их на проверку.\n\n"
             "Проверка происходит менеджером в порядке очереди "
             "в рабочее время с 11:00 до 20:00, "
