@@ -9,7 +9,7 @@ from aiogram.enums import ParseMode
 import asyncio
 
 # =========================
-# TOKEN (вставь свой новый)
+# TOKEN
 # =========================
 TOKEN = "8072709295:AAEowfFbPHBSgyFGLWY0KMCqv26hme0CmeE"
 
@@ -33,14 +33,14 @@ dp = Dispatcher(storage=MemoryStorage())
 # =========================
 class Form(StatesGroup):
     name = State()
-    photo = State()
     phone = State()
+    order = State()
+    photo = State()
 
 # =========================
-# MESSAGE MAP (manager_msg_id -> user_id)
+# MAP (manager_msg_id -> user_id)
 # =========================
 message_map = {}
-
 
 # =========================
 # START
@@ -48,19 +48,9 @@ message_map = {}
 @dp.message(CommandStart())
 async def start(message: Message, state: FSMContext):
 
-    welcome_text = (
-        "<b>Добро пожаловать в розыгрыш от RIDE ACTION!</b>\n\n"
-        "Главный приз — <u>сборка кастома в нашем магазине на сумму 50.000₽</u> 🛴\n\n"
-        "Чтобы принять участие, <b>нужно подтвердить покупку и сообщить данные для связи</b>, "
-        "которые понадобятся в случае выигрыша.\n\n"
-        "После проверки данных вы получите свой номер участника. "
-        "Сохраните его — именно по номеру участника мы выберем победителя в прямом эфире 11 июня в 17:00.\n\n"
-        "Для начала отправьте, пожалуйста, ваше имя и фамилию👇"
-    )
-
-    await message.answer(welcome_text)
-
+    await message.answer("Введите ФИО")
     await state.set_state(Form.name)
+
 
 # =========================
 # NAME
@@ -69,34 +59,56 @@ async def start(message: Message, state: FSMContext):
 async def get_name(message: Message, state: FSMContext):
 
     await state.update_data(name=message.text)
-    await state.set_state(Form.photo)
-
-    await message.answer("Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки.")
-
-
-# =========================
-# PHOTO
-# =========================
-@dp.message(Form.photo, F.photo)
-async def get_photo(message: Message, state: FSMContext):
-
-    await state.update_data(photo=message.photo[-1].file_id)
     await state.set_state(Form.phone)
 
-    await message.answer("Спасибо! Теперь отправьте, пожалуйста, номер телефона для связи.")
+    await message.answer(
+        "Спасибо!\n\n"
+        "Теперь отправьте, пожалуйста, номер телефона для связи."
+    )
 
 
 # =========================
-# PHONE + SEND TO MANAGERS
+# PHONE
 # =========================
 @dp.message(Form.phone)
 async def get_phone(message: Message, state: FSMContext):
 
+    await state.update_data(phone=message.text)
+    await state.set_state(Form.order)
+
+    await message.answer(
+        "Отлично 👌\n\n"
+        "Теперь отправьте номер вашего заказа."
+    )
+
+
+# =========================
+# ORDER
+# =========================
+@dp.message(Form.order)
+async def get_order(message: Message, state: FSMContext):
+
+    await state.update_data(order=message.text)
+    await state.set_state(Form.photo)
+
+    await message.answer(
+        "Спасибо!\n\n"
+        "Осталось отправить фото или скриншот чека / подтверждения покупки."
+    )
+
+
+# =========================
+# PHOTO + SEND TO MANAGERS
+# =========================
+@dp.message(Form.photo, F.photo)
+async def get_photo(message: Message, state: FSMContext):
+
     data = await state.get_data()
 
     name = data["name"]
-    photo = data["photo"]
-    phone = message.text
+    phone = data["phone"]
+    order = data["order"]
+    photo = message.photo[-1].file_id
 
     username = message.from_user.username
     username_text = f"@{username}" if username else "не указан"
@@ -105,6 +117,7 @@ async def get_phone(message: Message, state: FSMContext):
         f"📌 НОВАЯ ЗАЯВКА\n\n"
         f"ФИО: {name}\n"
         f"Телефон: {phone}\n"
+        f"Заказ: {order}\n"
         f"Username: {username_text}\n"
         f"ID: {message.from_user.id}"
     )
@@ -118,29 +131,29 @@ async def get_phone(message: Message, state: FSMContext):
             caption=caption
         )
 
-        # связываем сообщение менеджера с пользователем
         message_map[msg.message_id] = message.from_user.id
 
     await message.answer(
-        "✅ Заявка отправлена на проверку."
+        "✅ Спасибо! Мы получили ваши данные и отправили их на проверку.\n\n"
+        "Проверка происходит менеджером в порядке очереди в рабочее время с 11:00 до 20:00, "
+        "поэтому ответ может занять некоторое время.\n\n"
+        "После подтверждения мы отправим ваш номер участника 🎟️"
     )
 
     await state.clear()
 
 
 # =========================
-# MANAGER REPLY HANDLER
+# MANAGER REPLY SYSTEM
 # =========================
 @dp.message(F.text)
 async def manager_reply(message: Message):
 
     user_id = message.from_user.id
 
-    # только менеджеры
     if user_id not in MANAGERS:
         return
 
-    # обязательно ответ на сообщение
     if not message.reply_to_message:
         return
 
@@ -153,13 +166,13 @@ async def manager_reply(message: Message):
 
     text = message.text
 
-    # 1. отправка пользователю
+    # пользователю
     await bot.send_message(
         target_user_id,
         f"📩 Сообщение от менеджера:\n\n{text}"
     )
 
-    # 2. уведомление другим менеджерам
+    # другим менеджерам
     for manager in MANAGERS:
 
         if manager != user_id:
@@ -176,9 +189,7 @@ async def manager_reply(message: Message):
 # MAIN
 # =========================
 async def main():
-
     print("BOT STARTED")
-
     await dp.start_polling(bot)
 
 
