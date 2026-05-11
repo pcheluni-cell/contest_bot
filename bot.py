@@ -123,16 +123,16 @@ async def text_handler(message: Message):
     # =========================
     if user.get("step") == "name":
 
-    print("STEP NAME WORKS")
+    	print("STEP NAME WORKS")
 
-    user["name"] = text
-    user["step"] = "photo"
+    	user["name"] = text
+    	user["step"] = "photo"
 
-    print(users_data)
+    	print(users_data)
 
-    await message.answer(
-        "Спасибо! Теперь отправьте фото или скриншот чека."
-    )
+    	await message.answer(
+        	"Спасибо! Теперь отправьте фото или скриншот чека."
+    	)
 
     return
 
