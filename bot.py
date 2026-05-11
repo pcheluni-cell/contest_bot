@@ -179,7 +179,7 @@ async def text_handler(message: Message):
 # =========================
 # PHOTO HANDLER
 # =========================
-@@dp.message(F.photo)
+@dp.message(F.photo)
 async def photo_handler(message: Message):
 
     user_id = message.from_user.id
