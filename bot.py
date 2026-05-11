@@ -9,7 +9,7 @@ from aiogram.enums import ParseMode
 import asyncio
 
 # =========================
-# TOKEN
+# TOKEN (вставь свой новый)
 # =========================
 TOKEN = "8072709295:AAEowfFbPHBSgyFGLWY0KMCqv26hme0CmeE"
 
@@ -28,7 +28,6 @@ bot = Bot(
 
 dp = Dispatcher(storage=MemoryStorage())
 
-
 # =========================
 # STATES
 # =========================
@@ -36,6 +35,11 @@ class Form(StatesGroup):
     name = State()
     photo = State()
     phone = State()
+
+# =========================
+# MESSAGE MAP (manager_msg_id -> user_id)
+# =========================
+message_map = {}
 
 
 # =========================
@@ -45,7 +49,6 @@ class Form(StatesGroup):
 async def start(message: Message, state: FSMContext):
 
     await state.set_state(Form.name)
-
     await message.answer("Введите ФИО")
 
 
@@ -89,32 +92,83 @@ async def get_phone(message: Message, state: FSMContext):
     username_text = f"@{username}" if username else "не указан"
 
     caption = (
-        f"НОВАЯ ЗАЯВКА\n\n"
+        f"📌 НОВАЯ ЗАЯВКА\n\n"
         f"ФИО: {name}\n"
         f"Телефон: {phone}\n"
         f"Username: {username_text}\n"
         f"ID: {message.from_user.id}"
     )
 
+    # отправка менеджерам
     for manager in MANAGERS:
-        await bot.send_photo(
+
+        msg = await bot.send_photo(
             chat_id=manager,
             photo=photo,
             caption=caption
         )
 
+        # связываем сообщение менеджера с пользователем
+        message_map[msg.message_id] = message.from_user.id
+
     await message.answer(
-        "✅ Спасибо! Мы получили данные и отправили на проверку."
+        "✅ Заявка отправлена на проверку."
     )
 
     await state.clear()
 
 
 # =========================
+# MANAGER REPLY HANDLER
+# =========================
+@dp.message(F.text)
+async def manager_reply(message: Message):
+
+    user_id = message.from_user.id
+
+    # только менеджеры
+    if user_id not in MANAGERS:
+        return
+
+    # обязательно ответ на сообщение
+    if not message.reply_to_message:
+        return
+
+    replied_id = message.reply_to_message.message_id
+
+    if replied_id not in message_map:
+        return
+
+    target_user_id = message_map[replied_id]
+
+    text = message.text
+
+    # 1. отправка пользователю
+    await bot.send_message(
+        target_user_id,
+        f"📩 Сообщение от менеджера:\n\n{text}"
+    )
+
+    # 2. уведомление другим менеджерам
+    for manager in MANAGERS:
+
+        if manager != user_id:
+
+            await bot.send_message(
+                manager,
+                f"📢 Ответ менеджера пользователю {target_user_id}\n\n"
+                f"От: {message.from_user.full_name}\n\n"
+                f"{text}"
+            )
+
+
+# =========================
 # MAIN
 # =========================
 async def main():
+
     print("BOT STARTED")
+
     await dp.start_polling(bot)
 
 
