@@ -104,7 +104,7 @@ async def text_handler(message: Message):
 
         user["name"] = text
 
-        await message.answer("Отправьте фото чека")
+        await message.answer("Спасибо! \n Осталось отправить фото или скриншот чека / подтверждения покупки.")
 
         return
 
@@ -140,7 +140,11 @@ async def text_handler(message: Message):
             except Exception as e:
                 print("SEND ERROR:", e)
 
-        await message.answer("Ожидайте, менеджер проверяет номер заказа")
+        await message.answer("✅ Спасибо! Мы получили ваши данные и отправили их на проверку. \n
+
+Проверка происходит менеджером в порядке очереди в рабочее время с 11:00 до 20:00, поэтому ответ может занять некоторое время. \n
+
+После подтверждения мы отправим ваш номер участника 🎟️")
 
         del users_data[user_id]
 
@@ -160,7 +164,7 @@ async def photo_handler(message: Message):
 
     users_data[user_id]["photo"] = message.photo[-1].file_id
 
-    await message.answer("Введите номер телефона")
+    await message.answer("Спасибо! \n Теперь отправьте, пожалуйста, номер телефона для связи.")
 
 
 # =========================
