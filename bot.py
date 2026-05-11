@@ -121,7 +121,7 @@ async def text_handler(message: Message):
     # =========================
     # STEP NAME
     # =========================
-    if user["step"] == "name":
+    if user.get("step") == "name":
 
     print("STEP NAME WORKS")
 
