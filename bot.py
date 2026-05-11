@@ -134,7 +134,7 @@ async def text_handler(message: Message):
         	"Спасибо! Теперь отправьте фото или скриншот чека."
     	)
 
-    return
+    	return
 
     # =========================
     # STEP PHONE
