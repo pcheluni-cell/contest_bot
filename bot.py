@@ -123,14 +123,18 @@ async def text_handler(message: Message):
     # =========================
     if user["step"] == "name":
 
-        user["name"] = text
-        user["step"] = "photo"
+    print("STEP NAME WORKS")
 
-        await message.answer(
-            "Спасибо! Теперь отправьте фото или скриншот чека."
-        )
+    user["name"] = text
+    user["step"] = "photo"
 
-        return
+    print(users_data)
+
+    await message.answer(
+        "Спасибо! Теперь отправьте фото или скриншот чека."
+    )
+
+    return
 
     # =========================
     # STEP PHONE
@@ -186,7 +190,7 @@ async def text_handler(message: Message):
 # =========================
 @dp.message(F.photo)
 async def photo_handler(message: Message):
-
+    print("PHOTO RECEIVED")
     user_id = message.from_user.id
 
     if user_id not in users_data:
