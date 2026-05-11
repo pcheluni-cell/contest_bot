@@ -48,9 +48,23 @@ message_map = {}
 @dp.message(CommandStart())
 async def start(message: Message, state: FSMContext):
 
-    await state.set_state(Form.name)
-    await message.answer("Введите ФИО")
+    welcome_text = (
+        "🔥 Добро пожаловать в розыгрыш от RIDE ACTION!\n\n"
+        "Главный приз — сборка кастома в нашем магазине на сумму 50.000₽ 🛴✨\n\n"
+        "Чтобы принять участие, нужно подтвердить покупку и сообщить данные для связи, "
+        "которые понадобятся в случае выигрыша.\n\n"
+        "После проверки данных вы получите свой номер участника. "
+        "Сохраните его — именно по номеру участника мы выберем победителя в прямом эфире 11 июня в 17:00."
+    )
 
+    # 1 сообщение
+    await message.answer(welcome_text)
+
+    # 2 сообщение сразу после него
+    await message.answer("Введите ФИО 👇")
+
+    # запуск FSM
+    await state.set_state(Form.name)
 
 # =========================
 # NAME
