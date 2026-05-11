@@ -75,13 +75,11 @@ async def text_handler(message: Message):
 
                 try:
 
-                    # отправка пользователю
                     await bot.send_message(
                         target_user_id,
                         f"Сообщение от менеджера:\n\n{text}"
                     )
 
-                    # уведомление другим менеджерам
                     for manager in MANAGERS:
 
                         if manager != user_id:
@@ -110,19 +108,22 @@ async def text_handler(message: Message):
     # =========================
     if user_id not in users_data:
 
-        users_data[user_id] = {}
+        users_data[user_id] = {
+            "step": "name"
+        }
 
     user = users_data[user_id]
 
     # =========================
     # ФИО
     # =========================
-    if "name" not in user:
+    if user.get("step") == "name":
 
         user["name"] = text
+        user["step"] = "photo"
 
         await message.answer(
-            "Спасибо! Осталось отправить фото или скриншот чека / подтверждения покупки."
+            "Спасибо! Теперь отправьте фото или скриншот чека."
         )
 
         return
@@ -130,7 +131,7 @@ async def text_handler(message: Message):
     # =========================
     # ТЕЛЕФОН
     # =========================
-    if "photo" in user and "phone" not in user:
+    if user.get("step") == "phone":
 
         user["phone"] = text
 
@@ -149,7 +150,6 @@ async def text_handler(message: Message):
             f"ID: {user_id}"
         )
 
-        # отправка менеджерам
         for manager in MANAGERS:
 
             try:
@@ -160,7 +160,6 @@ async def text_handler(message: Message):
                     caption=caption
                 )
 
-                # сохраняем связь message_id -> user_id
                 message_map[msg.message_id] = user_id
 
             except Exception as e:
@@ -169,8 +168,6 @@ async def text_handler(message: Message):
 
         await message.answer(
             "✅ Спасибо! Мы получили ваши данные и отправили их на проверку.\n\n"
-            "Проверка происходит менеджером в порядке очереди "
-            "в рабочее время с 11:00 до 20:00.\n\n"
             "После подтверждения мы отправим ваш номер участника 🎟️"
         )
 
@@ -182,19 +179,35 @@ async def text_handler(message: Message):
 # =========================
 # PHOTO HANDLER
 # =========================
-@dp.message(F.photo)
+@@dp.message(F.photo)
 async def photo_handler(message: Message):
 
     user_id = message.from_user.id
 
     if user_id not in users_data:
 
-        users_data[user_id] = {}
+        await message.answer(
+            "Нажмите /start"
+        )
 
-    users_data[user_id]["photo"] = message.photo[-1].file_id
+        return
+
+    user = users_data[user_id]
+
+    # фото ждём только после ФИО
+    if user.get("step") != "photo":
+
+        await message.answer(
+            "Сначала введите ФИО"
+        )
+
+        return
+
+    user["photo"] = message.photo[-1].file_id
+    user["step"] = "phone"
 
     await message.answer(
-        "Спасибо! Теперь отправьте номер телефона для связи."
+        "Теперь отправьте номер телефона для связи."
     )
 
 
