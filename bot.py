@@ -7,11 +7,11 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 import asyncio
-print("BOT STARTED")
+
 # =========================
 # TOKEN
 # =========================
-TOKEN = "8072709295:AAEowfFbPHBSgyFGLWY0KMCqv26hme0CmeE"
+TOKEN = "8072709295:AAEvJm3uWLvDVCiTHXu6f3-qsX4wJbxBPBQ"
 
 # =========================
 # MANAGERS
